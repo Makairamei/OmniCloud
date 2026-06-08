@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import os from 'os';
 import crypto from 'crypto';
-import path from 'path';
 
 dotenv.config();
 
@@ -20,10 +19,8 @@ export const env = {
 	syncIntervalMinutes: Number(process.env.SYNC_INTERVAL_MINUTES || 5),
 	encryptionKey,
 	frontendUrl: process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173',
-	googleCredentialsPath: path.resolve(
-		process.cwd(),
-		process.env.GOOGLE_CREDENTIALS_PATH || './credentials.json',
-	),
+	googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
 	googleRedirectUri:
 		process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8787/api/accounts/google/callback',
 	onedriveClientId: process.env.ONEDRIVE_CLIENT_ID || '',
@@ -39,7 +36,7 @@ export function redactEnv() {
 		corsOrigin: env.corsOrigin,
 		syncIntervalMinutes: env.syncIntervalMinutes,
 		frontendUrl: env.frontendUrl,
-		googleCredentialsPath: env.googleCredentialsPath,
+		googleClientId: env.googleClientId ? '[configured]' : '[missing]',
 		googleRedirectUri: env.googleRedirectUri,
 		onedriveClientId: env.onedriveClientId ? '[configured]' : '[missing]',
 		onedriveTenantId: env.onedriveTenantId,

@@ -1,4 +1,3 @@
-import fs from 'fs';
 import { randomUUID } from 'crypto';
 import { google } from 'googleapis';
 import { env } from '../config/env.js';
@@ -7,20 +6,16 @@ import { syncAccount } from './syncService.js';
 
 const oauthStates = new Map();
 
+
 function readGoogleCredentials() {
-	if (!fs.existsSync(env.googleCredentialsPath)) {
-		throw new Error(`Google credentials file not found at ${env.googleCredentialsPath}`);
+	if (!env.googleClientId || !env.googleClientSecret) {
+		throw new Error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in services/api/.env');
 	}
 
-	const raw = fs.readFileSync(env.googleCredentialsPath, 'utf8');
-	const parsed = JSON.parse(raw);
-	const config = parsed.installed || parsed.web;
-
-	if (!config?.client_id || !config?.client_secret) {
-		throw new Error('Invalid Google credentials.json format');
-	}
-
-	return config;
+	return {
+		client_id: env.googleClientId,
+		client_secret: env.googleClientSecret,
+	};
 }
 
 function createOAuthClient() {
@@ -46,11 +41,8 @@ async function fetchDriveProfile(oauthClient) {
 }
 
 export function getGoogleIntegrationStatus() {
-	const hasCredentialsFile = fs.existsSync(env.googleCredentialsPath);
-
 	return {
-		configured: hasCredentialsFile,
-		credentialsPath: env.googleCredentialsPath,
+		configured: Boolean(env.googleClientId && env.googleClientSecret),
 		redirectUri: env.googleRedirectUri,
 	};
 }

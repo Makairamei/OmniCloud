@@ -2,6 +2,15 @@
 
 Backend Node.js untuk proxy metadata, upload stream, WebSocket progress, dan sinkronisasi delta.
 
+## Environment
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- `ONEDRIVE_CLIENT_ID`
+- `ONEDRIVE_CLIENT_SECRET`
+- `ONEDRIVE_TENANT_ID`
+- `ONEDRIVE_REDIRECT_URI`
+
 ## Endpoint utama
 - `GET /api/health`
 - `GET /api/accounts`
