@@ -35,6 +35,10 @@ import {
 	IconPhotoFilled,
 	IconVideoFilled,
 } from '@tabler/icons-vue';
+import dropboxLogo from '../assets/dropbox.svg';
+import googleDriveLogo from '../assets/google-drive.svg';
+import megaLogo from '../assets/mega.svg';
+import oneDriveLogo from '../assets/microsoft-onedrive.svg';
 import DriveShell from '../components/DriveShell.vue';
 import FloatingProgressToast from '../components/FloatingProgressToast.vue';
 import TruncateMarquee from '../components/TruncateMarquee.vue';
@@ -184,6 +188,22 @@ function formatDate(value) {
 		month: 'short',
 		year: 'numeric',
 	}).format(new Date(value));
+}
+
+function providerLabel(provider) {
+	if (provider === 'google_drive') return 'Google Drive';
+	if (provider === 'onedrive') return 'OneDrive';
+	if (provider === 'dropbox') return 'Dropbox';
+	if (provider === 'mega') return 'MEGA';
+	return provider || 'Provider';
+}
+
+function providerIcon(provider) {
+	if (provider === 'google_drive') return googleDriveLogo;
+	if (provider === 'onedrive') return oneDriveLogo;
+	if (provider === 'dropbox') return dropboxLogo;
+	if (provider === 'mega') return megaLogo;
+	return null;
 }
 
 function getFileExtension(file) {
@@ -987,7 +1007,12 @@ onBeforeUnmount(() => {
 								<component :is="getFileIcon(item, isSelected(item))" :size="18" :stroke="isSelected(item) ? 0 : 1.8" class="transition-transform duration-200 group-hover:scale-110" :class="isSelected(item) ? 'text-[#1a73e8] drop-shadow-sm dark:text-sky-300' : 'text-[#5f6368] dark:text-slate-400'" />
 								<TruncateMarquee :text="item.display_name || item.file_name" />
 							</div>
-							<TruncateMarquee class="text-[#5f6368] dark:text-slate-400" :text="item.email" />
+							<div class="flex min-w-0 items-center gap-2 text-[#5f6368] dark:text-slate-400">
+								<div v-if="providerIcon(item.provider)" class="flex size-6 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900/70">
+									<img :src="providerIcon(item.provider)" :alt="providerLabel(item.provider)" class="size-3.5 object-contain" />
+								</div>
+								<TruncateMarquee class="min-w-0" :text="item.email" />
+							</div>
 							<span class="text-[#5f6368] dark:text-slate-400">{{ formatDate(item.updated_at) }}</span>
 							<span class="text-[#5f6368] dark:text-slate-400">{{ item.is_folder ? '—' : formatBytes(item.size) }}</span>
 						</div>
@@ -1008,7 +1033,12 @@ onBeforeUnmount(() => {
 						</div>
 						<div class="min-w-0">
 							<TruncateMarquee as="p" class="text-sm font-semibold text-[#202124] dark:text-slate-100" :text="item.display_name || item.file_name" />
-							<TruncateMarquee as="p" class="mt-1 text-xs text-[#5f6368] dark:text-slate-400" :text="item.email || 'Tanpa pemilik'" />
+							<div class="mt-1 flex min-w-0 items-center gap-2 text-xs text-[#5f6368] dark:text-slate-400">
+								<div v-if="providerIcon(item.provider)" class="flex size-6 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900/70">
+									<img :src="providerIcon(item.provider)" :alt="providerLabel(item.provider)" class="size-3.5 object-contain" />
+								</div>
+								<TruncateMarquee as="p" class="min-w-0" :text="item.email || 'Tanpa pemilik'" />
+							</div>
 						</div>
 						<div class="flex w-full items-center justify-between text-xs text-[#5f6368] dark:text-slate-400">
 							<span>{{ formatDate(item.updated_at) }}</span>

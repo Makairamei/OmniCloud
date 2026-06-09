@@ -6,6 +6,10 @@ import {
 	IconInfoCircle,
 	IconLayoutList,
 } from '@tabler/icons-vue';
+import dropboxLogo from '../assets/dropbox.svg';
+import googleDriveLogo from '../assets/google-drive.svg';
+import megaLogo from '../assets/mega.svg';
+import oneDriveLogo from '../assets/microsoft-onedrive.svg';
 import DriveShell from '../components/DriveShell.vue';
 import TruncateMarquee from '../components/TruncateMarquee.vue';
 import { useFileTreeStore } from '../stores/fileTree';
@@ -45,6 +49,22 @@ function formatDate(value) {
 		month: 'short',
 		year: 'numeric',
 	}).format(new Date(value));
+}
+
+function providerLabel(provider) {
+	if (provider === 'google_drive') return 'Google Drive';
+	if (provider === 'onedrive') return 'OneDrive';
+	if (provider === 'dropbox') return 'Dropbox';
+	if (provider === 'mega') return 'MEGA';
+	return provider || 'Provider';
+}
+
+function providerIcon(provider) {
+	if (provider === 'google_drive') return googleDriveLogo;
+	if (provider === 'onedrive') return oneDriveLogo;
+	if (provider === 'dropbox') return dropboxLogo;
+	if (provider === 'mega') return megaLogo;
+	return null;
 }
 
 async function loadPage() {
@@ -118,7 +138,12 @@ onMounted(loadPage);
 							<IconFileDescription :size="18" :stroke="1.8" class="text-[#5f6368] dark:text-slate-400" />
 							<TruncateMarquee :text="file.display_name || file.file_name" />
 						</span>
-						<TruncateMarquee class="text-[#5f6368] dark:text-slate-400" :text="file.email" />
+						<div class="flex min-w-0 items-center gap-2 text-[#5f6368] dark:text-slate-400">
+							<div v-if="providerIcon(file.provider)" class="flex size-6 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900/70">
+								<img :src="providerIcon(file.provider)" :alt="providerLabel(file.provider)" class="size-3.5 object-contain" />
+							</div>
+							<TruncateMarquee class="min-w-0" :text="file.email" />
+						</div>
 						<span class="text-[#5f6368] dark:text-slate-400">{{ formatDate(file.updated_at) }}</span>
 						<span class="text-[#5f6368] dark:text-slate-400 max-md:hidden">{{ formatBytes(file.size) }}</span>
 					</div>

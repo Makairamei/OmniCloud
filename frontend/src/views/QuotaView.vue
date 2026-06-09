@@ -2,8 +2,6 @@
 import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import {
-	IconBrandDropbox,
-	IconBrandGoogleDrive,
 	IconChevronDown,
 	IconCloud,
 	IconLinkPlus,
@@ -11,6 +9,10 @@ import {
 	IconPlugConnectedX,
 	IconRefresh,
 } from '@tabler/icons-vue';
+import dropboxLogo from '../assets/dropbox.svg';
+import googleDriveLogo from '../assets/google-drive.svg';
+import megaLogo from '../assets/mega.svg';
+import oneDriveLogo from '../assets/microsoft-onedrive.svg';
 import DriveShell from '../components/DriveShell.vue';
 import MegaConnectModal from '../components/MegaConnectModal.vue';
 import TruncateMarquee from '../components/TruncateMarquee.vue';
@@ -54,6 +56,37 @@ const accountPalette = [
 		free: 'bg-[#e9d7fe]',
 		surface: 'bg-[#f3e8ff]',
 		text: 'text-[#9334e6]',
+	},
+];
+
+const providerConnectOptions = [
+	{
+		key: 'google_drive',
+		label: 'Google Drive',
+		busyLabel: 'Menghubungkan Google...',
+		icon: googleDriveLogo,
+		action: connectGoogleDrive,
+	},
+	{
+		key: 'onedrive',
+		label: 'OneDrive',
+		busyLabel: 'Menghubungkan OneDrive...',
+		icon: oneDriveLogo,
+		action: connectOneDrive,
+	},
+	{
+		key: 'dropbox',
+		label: 'Dropbox',
+		busyLabel: 'Menghubungkan Dropbox...',
+		icon: dropboxLogo,
+		action: connectDropbox,
+	},
+	{
+		key: 'mega',
+		label: 'MEGA',
+		busyLabel: 'Menghubungkan MEGA...',
+		icon: megaLogo,
+		action: openMegaModal,
 	},
 ];
 
@@ -125,6 +158,14 @@ function providerLabel(provider) {
 	if (provider === 'dropbox') return 'Dropbox';
 	if (provider === 'mega') return 'MEGA';
 	return provider;
+}
+
+function providerIcon(provider) {
+	if (provider === 'google_drive') return googleDriveLogo;
+	if (provider === 'onedrive') return oneDriveLogo;
+	if (provider === 'dropbox') return dropboxLogo;
+	if (provider === 'mega') return megaLogo;
+	return null;
 }
 
 function providerBadgeClass(status) {
@@ -312,21 +353,9 @@ onMounted(loadPage);
 						</button>
 
 						<div v-if="isConnectMenuOpen" class="absolute right-0 top-[calc(100%+10px)] z-20 min-w-[240px] overflow-hidden rounded-[20px] border border-[#e0e3e7] bg-white py-2 shadow-[0_18px_44px_rgba(32,33,36,0.18)] dark:border-slate-700 dark:bg-slate-900">
-							<button type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#202124] hover:bg-[#f8fafd] disabled:opacity-60 dark:text-slate-100 dark:hover:bg-slate-800" :disabled="Boolean(connectingProvider)" @click="connectGoogleDrive">
-								<IconBrandGoogleDrive :size="18" :stroke="2" />
-								<span>{{ connectingProvider === 'google_drive' ? 'Menghubungkan Google...' : 'Google Drive' }}</span>
-							</button>
-							<button type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#202124] hover:bg-[#f8fafd] disabled:opacity-60 dark:text-slate-100 dark:hover:bg-slate-800" :disabled="Boolean(connectingProvider)" @click="connectOneDrive">
-								<IconLinkPlus :size="18" :stroke="2" />
-								<span>{{ connectingProvider === 'onedrive' ? 'Menghubungkan OneDrive...' : 'OneDrive' }}</span>
-							</button>
-							<button type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#202124] hover:bg-[#f8fafd] disabled:opacity-60 dark:text-slate-100 dark:hover:bg-slate-800" :disabled="Boolean(connectingProvider)" @click="connectDropbox">
-								<IconBrandDropbox :size="18" :stroke="2" />
-								<span>{{ connectingProvider === 'dropbox' ? 'Menghubungkan Dropbox...' : 'Dropbox' }}</span>
-							</button>
-							<button type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#202124] hover:bg-[#f8fafd] disabled:opacity-60 dark:text-slate-100 dark:hover:bg-slate-800" :disabled="Boolean(connectingProvider)" @click="openMegaModal">
-								<IconCloud :size="18" :stroke="2" />
-								<span>{{ connectingProvider === 'mega' ? 'Menghubungkan MEGA...' : 'MEGA' }}</span>
+							<button v-for="provider in providerConnectOptions" :key="provider.key" type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#202124] hover:bg-[#f8fafd] disabled:opacity-60 dark:text-slate-100 dark:hover:bg-slate-800" :disabled="Boolean(connectingProvider)" @click="provider.action">
+								<img :src="provider.icon" :alt="provider.label" class="size-[18px] shrink-0 object-contain" />
+								<span>{{ connectingProvider === provider.key ? provider.busyLabel : provider.label }}</span>
 							</button>
 						</div>
 					</div>
@@ -366,9 +395,14 @@ onMounted(loadPage);
 				<div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 					<div v-for="account in accountLegends" :key="account.id" class="min-w-0 rounded-[22px] border border-[#e3e8ee] bg-[#f8fafd] p-4 dark:border-slate-700 dark:bg-slate-800/85">
 						<div class="flex items-start justify-between gap-3">
-							<div class="min-w-0">
-								<TruncateMarquee as="p" class="text-sm font-semibold" :text="account.email" />
-								<TruncateMarquee as="p" class="text-xs text-[#5f6368] dark:text-slate-400" :text="providerLabel(account.provider)" />
+							<div class="flex min-w-0 items-start gap-3">
+								<div class="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white dark:bg-slate-900/70">
+									<img v-if="providerIcon(account.provider)" :src="providerIcon(account.provider)" :alt="providerLabel(account.provider)" class="size-5 object-contain" />
+								</div>
+								<div class="min-w-0">
+									<TruncateMarquee as="p" class="text-sm font-semibold" :text="account.email" />
+									<TruncateMarquee as="p" class="text-xs text-[#5f6368] dark:text-slate-400" :text="providerLabel(account.provider)" />
+								</div>
 							</div>
 							<div class="grid gap-1 text-xs">
 								<span class="inline-flex items-center gap-2">
@@ -395,15 +429,9 @@ onMounted(loadPage);
 						</div>
 
 						<div class="mt-4 flex items-center justify-between gap-3">
-							<button
-								type="button"
-								class="inline-flex h-10 items-center gap-2 rounded-full border bg-white px-4 disabled:opacity-60 dark:bg-slate-800"
-								:class="isReconnectable(account)
-									? 'border-[#c7dafc] text-[#1a73e8] dark:border-sky-900/50 dark:text-sky-300'
-									: 'border-[#f3c7c4] text-[#c5221f] dark:border-red-900/50 dark:text-red-300'"
-								:disabled="isAccountActionBusy(account)"
-								@click="handleAccountAction(account)"
-							>
+							<button type="button" class="inline-flex h-10 items-center gap-2 rounded-full border bg-white px-4 disabled:opacity-60 dark:bg-slate-800" :class="isReconnectable(account)
+								? 'border-[#c7dafc] text-[#1a73e8] dark:border-sky-900/50 dark:text-sky-300'
+								: 'border-[#f3c7c4] text-[#c5221f] dark:border-red-900/50 dark:text-red-300'" :disabled="isAccountActionBusy(account)" @click="handleAccountAction(account)">
 								<IconPlugConnected v-if="isReconnectable(account)" :size="18" :stroke="2" />
 								<IconPlugConnectedX v-else :size="18" :stroke="2" />
 								<span>{{ accountActionLabel(account) }}</span>
@@ -418,7 +446,7 @@ onMounted(loadPage);
 			<p v-if="actionError || error" class="mb-4 rounded-2xl bg-[#fce8e6] px-4 py-3 text-sm text-[#c5221f] dark:bg-red-950/40 dark:text-red-300">{{ actionError || error }}</p>
 
 			<div v-if="!accounts.length && !isLoading" class="rounded-[24px] border border-dashed border-[#dadce0] bg-white p-6 text-center text-[#5f6368] dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-					Belum ada akun terhubung.
+				Belum ada akun terhubung.
 			</div>
 
 			<MegaConnectModal v-if="isMegaModalOpen" :is-connecting="connectingProvider === 'mega'" :error="actionError" @close="closeMegaModal" @connect="connectMega" />
