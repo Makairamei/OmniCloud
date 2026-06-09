@@ -21,6 +21,8 @@ import {
 	IconTrash,
 	IconVideo,
 	IconInfoCircle,
+	IconCloud,
+	IconCloudFilled,
 	IconLayoutGrid,
 	IconList,
 	IconSearch,
@@ -96,8 +98,17 @@ const canRenameSelection = computed(() => selectedCount.value === 1);
 const canDownloadSelection = computed(() => selectedFiles.value.some((file) => !file.is_folder));
 
 const ownerOptions = computed(() => {
-	const owners = [...new Set(filteredFiles.value.map((file) => file.email).filter(Boolean))];
-	return owners.sort((left, right) => left.localeCompare(right, 'id'));
+	const ownerMap = new Map();
+
+	filteredFiles.value.forEach((file) => {
+		if (!file.email || ownerMap.has(file.email)) return;
+		ownerMap.set(file.email, {
+			email: file.email,
+			provider: file.provider || null,
+		});
+	});
+
+	return [...ownerMap.values()].sort((left, right) => left.email.localeCompare(right.email, 'id'));
 });
 
 const typeOptions = computed(() => [
@@ -912,12 +923,23 @@ onBeforeUnmount(() => {
 					</button>
 					<div v-if="activeFilterMenu === 'owner'" class="absolute right-0 top-full z-30 mt-2 min-w-[260px] overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_16px_40px_rgba(32,33,36,0.16)] dark:border-slate-700 dark:bg-slate-800">
 						<button type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('owner', 'all')">
-							<span>{{ t('filters.allOwners') }}</span>
+							<span class="flex min-w-0 items-center gap-2">
+								<span class="flex size-5 shrink-0 items-center justify-center">
+									<component :is="selectedOwnerFilter === 'all' ? IconCloudFilled : IconCloud" :size="16" :stroke="selectedOwnerFilter === 'all' ? 0 : 1.8" :class="selectedOwnerFilter === 'all' ? 'text-[#1a73e8] dark:text-sky-300' : 'text-[#5f6368] dark:text-slate-400'" />
+								</span>
+								<span>{{ t('filters.allOwners') }}</span>
+							</span>
 							<IconCheck v-if="selectedOwnerFilter === 'all'" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
 						</button>
-						<button v-for="owner in ownerOptions" :key="owner" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('owner', owner)">
-							<span class="truncate">{{ owner }}</span>
-							<IconCheck v-if="selectedOwnerFilter === owner" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
+						<button v-for="owner in ownerOptions" :key="owner.email" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('owner', owner.email)">
+							<span class="flex min-w-0 items-center gap-2">
+								<div v-if="providerIcon(owner.provider)" class="flex size-5 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900/70">
+									<img :src="providerIcon(owner.provider)" :alt="providerLabel(owner.provider)" class="size-3.5 object-contain" />
+								</div>
+								<div v-else class="size-5 shrink-0"></div>
+								<span class="truncate">{{ owner.email }}</span>
+							</span>
+							<IconCheck v-if="selectedOwnerFilter === owner.email" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
 						</button>
 					</div>
 				</div>
@@ -954,7 +976,7 @@ onBeforeUnmount(() => {
 					<button type="button" class="inline-flex size-9 items-center justify-center rounded-full transition hover:bg-[#d2e3fc] dark:hover:bg-sky-500/20" :title="t('drive.deselectAll')" @click="clearSelection">
 						<IconX :size="18" :stroke="2" />
 					</button>
-					<span class="pr-2 text-sm font-semibold">{{ selectedCount }} {{ t('drive.selected', { count: selectedCount }) }}</span>
+					<span class="pr-2 text-sm font-semibold">{{ selectedCount }} {{ t('drive.selected') }}</span>
 					<button v-if="primarySelectedFile?.is_folder && selectedCount === 1" type="button" class="inline-flex size-9 items-center justify-center rounded-full transition hover:bg-[#d2e3fc] dark:hover:bg-sky-500/20" :title="t('common.open')" @click="openSelectedItem">
 						<IconFolder :size="18" :stroke="2" />
 					</button>
