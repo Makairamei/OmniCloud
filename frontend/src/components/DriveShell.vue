@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import {
-	IconBrandGoogleDrive,
+	IconCloudDataConnection,
 	IconChevronRight,
 	IconHelp,
 	IconHome,
@@ -29,6 +29,8 @@ import {
 	IconUserFilled,
 } from '@tabler/icons-vue';
 import { useAccountManagementStore } from '../stores/accountManagement';
+import HelpModal from './HelpModal.vue';
+import ProfileModal from './ProfileModal.vue';
 
 const props = defineProps({
 	currentSection: { type: String, required: true },
@@ -38,6 +40,8 @@ const emit = defineEmits(['new-folder', 'upload-files', 'upload-folder']);
 
 const isCreateMenuOpen = ref(false);
 const isMobileNavOpen = ref(false);
+const isHelpModalOpen = ref(false);
+const isProfileModalOpen = ref(false);
 const createMenuRef = ref(null);
 const theme = ref('light');
 const accountStore = useAccountManagementStore();
@@ -72,6 +76,22 @@ function closeMobileNav() {
 	isMobileNavOpen.value = false;
 }
 
+function openProfileModal() {
+	isProfileModalOpen.value = true;
+}
+
+function closeProfileModal() {
+	isProfileModalOpen.value = false;
+}
+
+function openHelpModal() {
+	isHelpModalOpen.value = true;
+}
+
+function closeHelpModal() {
+	isHelpModalOpen.value = false;
+}
+
 function runCreateAction(action) {
 	isCreateMenuOpen.value = false;
 	isMobileNavOpen.value = false;
@@ -88,6 +108,20 @@ function handleDocumentClick(event) {
 	}
 }
 
+function handleWindowKeydown(event) {
+	if (event.key !== 'Escape') {
+		return;
+	}
+
+	if (isHelpModalOpen.value) {
+		closeHelpModal();
+	}
+
+	if (isProfileModalOpen.value) {
+		closeProfileModal();
+	}
+}
+
 function applyTheme(nextTheme) {
 	theme.value = nextTheme;
 	document.documentElement.classList.toggle('dark', nextTheme === 'dark');
@@ -101,6 +135,7 @@ function toggleTheme() {
 onMounted(() => {
 	theme.value = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 	document.addEventListener('click', handleDocumentClick);
+	window.addEventListener('keydown', handleWindowKeydown);
 	if (!accounts.value.length) {
 		accountStore.loadAccounts();
 	}
@@ -108,6 +143,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
 	document.removeEventListener('click', handleDocumentClick);
+	window.removeEventListener('keydown', handleWindowKeydown);
 });
 
 const navItems = [
@@ -118,17 +154,31 @@ const navItems = [
 	{ id: 'starred', label: 'Berbintang', icon: IconStar, activeIcon: IconStarFilled, to: '/my-drive' },
 	{ id: 'storage', label: 'Penyimpanan', icon: IconCloud, activeIcon: IconCloudFilled, to: '/quota' },
 ];
+
+const profileLinks = [
+	{ id: 'website', label: 'Website', href: 'https://tarmizi.id' },
+	{ id: 'github', label: 'GitHub', href: 'https://github.com/dimartarmizi' },
+	{ id: 'linkedin', label: 'LinkedIn', href: 'https://www.linkedin.com/in/dimartarmizi' },
+	{ id: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/dimartarmizi' },
+	{ id: 'facebook', label: 'Facebook', href: 'https://www.facebook.com/dimartarmizi' },
+	{ id: 'reddit', label: 'Reddit', href: 'https://www.reddit.com/user/dimartarmizi' },
+];
 </script>
 
 <template>
 	<div class="min-h-screen bg-[#f8fafd] text-[#202124] dark:bg-slate-900 dark:text-slate-100">
+		<HelpModal :open="isHelpModalOpen" @close="closeHelpModal" />
+		<ProfileModal :open="isProfileModalOpen" :profile-links="profileLinks" @close="closeProfileModal" />
+
 		<header class="grid h-16 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 sm:gap-4 sm:px-4 lg:grid-cols-[244px_minmax(320px,720px)_1fr] lg:gap-3 lg:pr-4">
-			<div class="flex min-w-0 items-center gap-2 lg:gap-3.5 lg:pl-1">
+			<div class="flex min-w-0 items-center gap-2 lg:gap-3">
 				<button type="button" class="grid size-10 shrink-0 place-items-center rounded-full text-[#5f6368] transition hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 lg:hidden" data-mobile-nav-toggle aria-label="Buka menu navigasi" @click.stop="toggleMobileNav">
 					<IconMenu2 :size="22" :stroke="2" />
 				</button>
 				<div class="hidden items-center gap-2 lg:flex">
-					<IconBrandGoogleDrive :size="28" :stroke="1.8" class="text-[#1a73e8]" />
+					<button type="button" class="grid size-11 place-items-center rounded-2xl bg-[#1a73e8] text-white transition hover:scale-[1.03] hover:bg-[#1765cc] focus:outline-none focus:ring-4 focus:ring-[#1a73e8]/20 dark:bg-[#3b82f6] dark:text-white dark:hover:bg-[#2563eb] dark:focus:ring-blue-400/20" aria-label="Buka profil creator" @click="openProfileModal">
+						<IconCloudDataConnection :size="24" :stroke="2" />
+					</button>
 					<div class="text-[22px] font-medium text-[#5f6368] dark:text-slate-300">OmniCloud</div>
 				</div>
 			</div>
@@ -148,7 +198,7 @@ const navItems = [
 					<IconMoon v-if="theme !== 'dark'" :size="18" :stroke="2" />
 					<IconSun v-else :size="18" :stroke="2" />
 				</button>
-				<button type="button" class="hidden size-10 place-items-center rounded-full text-[#5f6368] hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 sm:grid">
+				<button type="button" class="hidden size-10 place-items-center rounded-full text-[#5f6368] hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 sm:grid" aria-label="Buka bantuan" @click="openHelpModal">
 					<IconHelp :size="18" :stroke="2" />
 				</button>
 				<button type="button" class="hidden size-10 place-items-center rounded-full text-[#5f6368] hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10 sm:grid">
@@ -162,8 +212,10 @@ const navItems = [
 				<div class="max-h-[calc(100vh-16px)] overflow-y-auto rounded-[28px] border border-[#dfe6f1] bg-white/95 p-4 text-[#202124] shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-100">
 					<div class="mb-5 flex items-center justify-between gap-3">
 						<div class="flex items-center gap-2">
-							<IconBrandGoogleDrive :size="28" :stroke="1.8" class="text-[#1a73e8]" />
-							<span class="text-xl font-semibold text-[#5f6368] dark:text-slate-300">OmniCloud</span>
+							<span class="grid size-11 place-items-center rounded-2xl bg-[#1a73e8] text-white dark:bg-[#3b82f6] dark:text-white">
+								<IconCloudDataConnection :size="24" :stroke="2" />
+							</span>
+							<span class="text-xl font-medium text-[#5f6368] dark:text-slate-300">OmniCloud</span>
 						</div>
 						<button type="button" class="grid size-10 place-items-center rounded-full text-[#5f6368] transition hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10" aria-label="Tutup menu navigasi" @click="closeMobileNav">
 							<IconX :size="20" :stroke="2" />
@@ -193,7 +245,7 @@ const navItems = [
 					</div>
 
 					<nav class="flex flex-col gap-1">
-						<RouterLink v-for="item in navItems" :key="item.label" :to="item.to" class="group relative flex h-12 items-center gap-3.5 overflow-hidden rounded-2xl px-4 text-[#202124] transition-all duration-200 dark:text-slate-100" :class="props.currentSection === item.id ? 'bg-gradient-to-r from-[#d3e3fd] to-[#eef5ff] font-semibold text-[#174ea6] shadow-[inset_4px_0_0_#1a73e8] dark:from-blue-500/20 dark:to-slate-700/80 dark:text-blue-200 dark:shadow-[inset_4px_0_0_#60a5fa]' : 'hover:bg-black/[0.03] hover:pl-5 dark:hover:bg-white/6'" @click="closeMobileNav">
+						<RouterLink v-for="item in navItems" :key="item.label" :to="item.to" class="group relative flex h-12 items-center gap-3.5 overflow-hidden rounded-2xl px-4 text-[#202124] transition-all duration-200 dark:text-slate-100" :class="props.currentSection === item.id ? 'bg-[linear-gradient(90deg,rgba(211,227,253,0.98)_0%,rgba(238,245,255,0.94)_72%,rgba(238,245,255,0.12)_88%,rgba(238,245,255,0)_100%)] font-semibold text-[#174ea6] shadow-[inset_4px_0_0_#1a73e8] dark:bg-[linear-gradient(90deg,rgba(59,130,246,0.24)_0%,rgba(51,65,85,0.2)_72%,rgba(30,41,59,0.08)_88%,rgba(15,23,42,0)_100%)] dark:text-blue-200 dark:shadow-[inset_4px_0_0_#60a5fa]' : 'hover:bg-black/[0.03] hover:pl-5 dark:hover:bg-white/6'" @click="closeMobileNav">
 							<component :is="props.currentSection === item.id ? item.activeIcon : item.icon" :size="20" :stroke="props.currentSection === item.id ? 0 : 2" class="shrink-0 transition-transform duration-200 group-hover:scale-110" :class="props.currentSection === item.id ? 'text-[#1a73e8] drop-shadow-sm dark:text-blue-300' : 'text-[#5f6368] dark:text-slate-400'" />
 							<span>{{ item.label }}</span>
 						</RouterLink>
@@ -245,7 +297,7 @@ const navItems = [
 				</div>
 
 				<nav class="-ml-4 -mr-3 mt-[18px] flex flex-col gap-0.5">
-					<RouterLink v-for="item in navItems" :key="item.label" :to="item.to" class="group relative mr-3 flex h-10 items-center gap-3.5 overflow-hidden rounded-r-[20px] px-6 text-[#202124] transition-all duration-200 dark:text-slate-100" :class="props.currentSection === item.id ? 'bg-gradient-to-r from-[#d3e3fd] to-[#eef5ff] font-semibold text-[#174ea6] shadow-[inset_4px_0_0_#1a73e8] dark:from-blue-500/20 dark:to-slate-700/80 dark:text-blue-200 dark:shadow-[inset_4px_0_0_#60a5fa]' : 'hover:bg-black/[0.03] hover:pl-7 dark:hover:bg-white/6'">
+					<RouterLink v-for="item in navItems" :key="item.label" :to="item.to" class="group relative mr-3 flex h-10 items-center gap-3.5 overflow-hidden rounded-r-[6px] px-6 text-[#202124] transition-all duration-200 dark:text-slate-100" :class="props.currentSection === item.id ? 'bg-[linear-gradient(90deg,rgba(211,227,253,0.98)_0%,rgba(238,245,255,0.94)_76%,rgba(238,245,255,0.14)_90%,rgba(238,245,255,0)_100%)] font-semibold text-[#174ea6] shadow-[inset_4px_0_0_#1a73e8] dark:bg-[linear-gradient(90deg,rgba(59,130,246,0.24)_0%,rgba(51,65,85,0.18)_76%,rgba(30,41,59,0.08)_90%,rgba(15,23,42,0)_100%)] dark:text-blue-200 dark:shadow-[inset_4px_0_0_#60a5fa]' : 'hover:bg-black/[0.03] dark:hover:bg-white/6'">
 						<component :is="props.currentSection === item.id ? item.activeIcon : item.icon" :size="18" :stroke="props.currentSection === item.id ? 0 : 2" class="shrink-0 transition-transform duration-200 group-hover:scale-110" :class="props.currentSection === item.id ? 'text-[#1a73e8] drop-shadow-sm dark:text-blue-300' : 'text-[#5f6368] dark:text-slate-400'" />
 						<span>{{ item.label }}</span>
 					</RouterLink>
