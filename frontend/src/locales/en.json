@@ -88,7 +88,7 @@
 		"empty": "No recent files yet."
 	},
 	"shared": {
-		"empty": "No files have been shared with you from compatible providers yet."
+		"empty": "No files in this folder."
 	},
 	"drive": {
 		"title": "My Drive",
@@ -296,9 +296,6 @@
 		"allOwners": "Everyone",
 		"type": "Type",
 		"modified": "Modified"
-	},
-	"suggestions": {
-		"title": "Suggestions"
 	},
 	"preview": {
 		"loading": "Loading preview...",

@@ -88,7 +88,7 @@
 		"empty": "Belum ada file terbaru."
 	},
 	"shared": {
-		"empty": "Belum ada file yang dibagikan ke Anda dari provider yang kompatibel."
+		"empty": "Belum ada file di folder ini."
 	},
 	"drive": {
 		"title": "Drive Saya",
@@ -296,9 +296,6 @@
 		"allOwners": "Semua orang",
 		"type": "Jenis",
 		"modified": "Diubah"
-	},
-	"suggestions": {
-		"title": "Saran"
 	},
 	"preview": {
 		"loading": "Memuat preview...",

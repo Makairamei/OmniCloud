@@ -11,6 +11,7 @@ import oneDriveLogo from '../assets/microsoft-onedrive.svg';
 import DriveShell from '../components/DriveShell.vue';
 import FloatingProgressToast from '../components/FloatingProgressToast.vue';
 import TruncateMarquee from '../components/TruncateMarquee.vue';
+import { useIncrementalRender } from '../composables/useIncrementalRender';
 import { useFileTreeStore } from '../stores/fileTree';
 import { useUploadQueueStore } from '../stores/uploadQueue';
 import { api } from '../services/api';
@@ -84,6 +85,12 @@ const sortedFiles = computed(() => {
 		if (leftValue > rightValue) return 1 * direction;
 		return 0;
 	});
+});
+
+const { visibleItems: renderedFiles, handleScroll: handleListScroll } = useIncrementalRender(sortedFiles, {
+	initialCount: 80,
+	step: 80,
+	threshold: 240,
 });
 
 const selectedFiles = computed(() => sortedFiles.value.filter((file) => selectedFileIds.value.has(file.id)));
@@ -640,7 +647,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<DriveShell current-section="starred">
-		<div class="relative min-h-[calc(100vh-84px)] rounded-[24px] bg-white px-4 py-[18px] pb-5 text-[#202124] dark:bg-slate-800 dark:text-slate-100 sm:px-6">
+		<div class="relative min-h-[calc(100vh-84px)] rounded-[24px] bg-white px-4 py-[18px] pb-5 text-[#202124] dark:bg-slate-800 dark:text-slate-100 sm:px-6" @click.self="clearSelection">
 			<div class="mb-2 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
 				<h1 class="m-0 text-2xl font-normal text-[#202124] dark:text-slate-100">{{ t('nav.starred') }}</h1>
 				<div class="flex items-center gap-2">
@@ -650,60 +657,6 @@ onBeforeUnmount(() => {
 					<button type="button" class="grid size-9 place-items-center rounded-full transition" :class="isGridView ? 'bg-[#e8f0fe] text-[#1a73e8] dark:bg-sky-500/15 dark:text-sky-300' : 'text-[#5f6368] hover:bg-black/5 dark:text-slate-400 dark:hover:bg-white/8'" @click="toggleViewMode('grid')">
 						<component :is="isGridView ? IconLayoutGridFilled : IconLayoutGrid" :size="18" :stroke="isGridView ? 0 : 2" />
 					</button>
-				</div>
-			</div>
-
-			<div class="mb-4 flex flex-wrap items-center justify-end gap-2.5">
-				<div class="relative">
-					<button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-[#e0e3e7] bg-[#f8fafd] px-3.5 py-2 text-sm font-medium text-[#3c4043] transition hover:border-[#c7d2e0] hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800" @click.stop="toggleFilterMenu('type')">
-						<span>{{ getFilterLabel('type', selectedTypeFilter) }}</span>
-						<IconX v-if="isFilterActive('type')" :size="16" :stroke="2" class="text-[#5f6368] transition hover:text-[#1a73e8] dark:text-slate-400 dark:hover:text-sky-300" @click.stop="clearFilter('type')" />
-						<IconChevronDown v-else :size="16" :stroke="2" class="text-[#5f6368] dark:text-slate-400" />
-					</button>
-					<div v-if="activeFilterMenu === 'type'" class="absolute right-0 top-full z-30 mt-2 min-w-[220px] overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_16px_40px_rgba(32,33,36,0.16)] dark:border-slate-700 dark:bg-slate-800">
-						<button v-for="option in typeOptions" :key="option.value" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('type', option.value)">
-							<span class="flex items-center gap-2">
-								<component :is="getTypeFilterIcon(option.value, selectedTypeFilter === option.value)" :size="16" :stroke="selectedTypeFilter === option.value ? 0 : 1.8" :class="selectedTypeFilter === option.value ? 'text-[#1a73e8] dark:text-sky-300' : 'text-[#5f6368] dark:text-slate-400'" /><span>{{ option.label }}</span>
-							</span>
-							<IconCheck v-if="selectedTypeFilter === option.value" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
-						</button>
-					</div>
-				</div>
-				<div class="relative">
-					<button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-[#e0e3e7] bg-[#f8fafd] px-3.5 py-2 text-sm font-medium text-[#3c4043] transition hover:border-[#c7d2e0] hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800" @click.stop="toggleFilterMenu('owner')">
-						<span>{{ renderOwnerLabel(selectedOwnerFilter) }}</span>
-						<IconX v-if="isFilterActive('owner')" :size="16" :stroke="2" class="text-[#5f6368] transition hover:text-[#1a73e8] dark:text-slate-400 dark:hover:text-sky-300" @click.stop="clearFilter('owner')" />
-						<IconChevronDown v-else :size="16" :stroke="2" class="text-[#5f6368] dark:text-slate-400" />
-					</button>
-					<div v-if="activeFilterMenu === 'owner'" class="absolute right-0 top-full z-30 mt-2 min-w-[260px] overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_16px_40px_rgba(32,33,36,0.16)] dark:border-slate-700 dark:bg-slate-800">
-						<button type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('owner', 'all')">
-							<span class="flex min-w-0 items-center gap-2"><span class="flex size-5 shrink-0 items-center justify-center">
-									<component :is="selectedOwnerFilter === 'all' ? IconCloudFilled : IconCloud" :size="16" :stroke="selectedOwnerFilter === 'all' ? 0 : 1.8" :class="selectedOwnerFilter === 'all' ? 'text-[#1a73e8] dark:text-sky-300' : 'text-[#5f6368] dark:text-slate-400'" />
-								</span><span>{{ t('filters.allOwners') }}</span></span>
-							<IconCheck v-if="selectedOwnerFilter === 'all'" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
-						</button>
-						<button v-for="owner in ownerOptions" :key="owner.email" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('owner', owner.email)">
-							<span class="flex min-w-0 items-center gap-2">
-								<div v-if="providerIcon(owner.provider)" class="flex size-5 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900/70"><img :src="providerIcon(owner.provider)" :alt="providerLabel(owner.provider)" class="size-3.5 object-contain" /></div>
-								<div v-else class="size-5 shrink-0"></div>
-								<span class="truncate">{{ owner.email }}</span>
-							</span>
-							<IconCheck v-if="selectedOwnerFilter === owner.email" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
-						</button>
-					</div>
-				</div>
-				<div class="relative">
-					<button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-[#e0e3e7] bg-[#f8fafd] px-3.5 py-2 text-sm font-medium text-[#3c4043] transition hover:border-[#c7d2e0] hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800" @click.stop="toggleFilterMenu('updated')">
-						<span>{{ getFilterLabel('updated', selectedUpdatedFilter) }}</span>
-						<IconX v-if="isFilterActive('updated')" :size="16" :stroke="2" class="text-[#5f6368] transition hover:text-[#1a73e8] dark:text-slate-400 dark:hover:text-sky-300" @click.stop="clearFilter('updated')" />
-						<IconChevronDown v-else :size="16" :stroke="2" class="text-[#5f6368] dark:text-slate-400" />
-					</button>
-					<div v-if="activeFilterMenu === 'updated'" class="absolute right-0 top-full z-30 mt-2 min-w-[240px] overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_16px_40px_rgba(32,33,36,0.16)] dark:border-slate-700 dark:bg-slate-800">
-						<button v-for="option in updatedOptions" :key="option.value" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('updated', option.value)">
-							<span>{{ option.label }}</span>
-							<IconCheck v-if="selectedUpdatedFilter === option.value" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
-						</button>
-					</div>
 				</div>
 			</div>
 
@@ -735,7 +688,61 @@ onBeforeUnmount(() => {
 						<IconTrash :size="18" :stroke="2" />
 					</button>
 				</div>
-				<h2 v-else class="m-0 text-base font-medium text-[#202124] dark:text-slate-100">{{ t('nav.starred') }}</h2>
+
+				<div v-else class="flex flex-wrap items-center justify-end gap-2.5">
+					<div class="relative">
+						<button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-[#e0e3e7] bg-[#f8fafd] px-3.5 py-2.5 text-sm font-medium text-[#3c4043] transition hover:border-[#c7d2e0] hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800" @click.stop="toggleFilterMenu('type')">
+							<span>{{ getFilterLabel('type', selectedTypeFilter) }}</span>
+							<IconX v-if="isFilterActive('type')" :size="16" :stroke="2" class="text-[#5f6368] transition hover:text-[#1a73e8] dark:text-slate-400 dark:hover:text-sky-300" @click.stop="clearFilter('type')" />
+							<IconChevronDown v-else :size="16" :stroke="2" class="text-[#5f6368] dark:text-slate-400" />
+						</button>
+						<div v-if="activeFilterMenu === 'type'" class="absolute right-0 top-full z-30 mt-2 min-w-[220px] overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_16px_40px_rgba(32,33,36,0.16)] dark:border-slate-700 dark:bg-slate-800">
+							<button v-for="option in typeOptions" :key="option.value" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('type', option.value)">
+								<span class="flex items-center gap-2">
+									<component :is="getTypeFilterIcon(option.value, selectedTypeFilter === option.value)" :size="16" :stroke="selectedTypeFilter === option.value ? 0 : 1.8" :class="selectedTypeFilter === option.value ? 'text-[#1a73e8] dark:text-sky-300' : 'text-[#5f6368] dark:text-slate-400'" /><span>{{ option.label }}</span>
+								</span>
+								<IconCheck v-if="selectedTypeFilter === option.value" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
+							</button>
+						</div>
+					</div>
+					<div class="relative">
+						<button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-[#e0e3e7] bg-[#f8fafd] px-3.5 py-2.5 text-sm font-medium text-[#3c4043] transition hover:border-[#c7d2e0] hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800" @click.stop="toggleFilterMenu('owner')">
+							<span>{{ renderOwnerLabel(selectedOwnerFilter) }}</span>
+							<IconX v-if="isFilterActive('owner')" :size="16" :stroke="2" class="text-[#5f6368] transition hover:text-[#1a73e8] dark:text-slate-400 dark:hover:text-sky-300" @click.stop="clearFilter('owner')" />
+							<IconChevronDown v-else :size="16" :stroke="2" class="text-[#5f6368] dark:text-slate-400" />
+						</button>
+						<div v-if="activeFilterMenu === 'owner'" class="absolute right-0 top-full z-30 mt-2 min-w-[260px] overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_16px_40px_rgba(32,33,36,0.16)] dark:border-slate-700 dark:bg-slate-800">
+							<button type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('owner', 'all')">
+								<span class="flex min-w-0 items-center gap-2"><span class="flex size-5 shrink-0 items-center justify-center">
+										<component :is="selectedOwnerFilter === 'all' ? IconCloudFilled : IconCloud" :size="16" :stroke="selectedOwnerFilter === 'all' ? 0 : 1.8" :class="selectedOwnerFilter === 'all' ? 'text-[#1a73e8] dark:text-sky-300' : 'text-[#5f6368] dark:text-slate-400'" />
+									</span><span>{{ t('filters.allOwners') }}</span></span>
+								<IconCheck v-if="selectedOwnerFilter === 'all'" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
+							</button>
+							<button v-for="owner in ownerOptions" :key="owner.email" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('owner', owner.email)">
+								<span class="flex min-w-0 items-center gap-2">
+									<div v-if="providerIcon(owner.provider)" class="flex size-5 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900/70"><img :src="providerIcon(owner.provider)" :alt="providerLabel(owner.provider)" class="size-3.5 object-contain" /></div>
+									<div v-else class="size-5 shrink-0"></div>
+									<span class="truncate">{{ owner.email }}</span>
+								</span>
+								<IconCheck v-if="selectedOwnerFilter === owner.email" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
+							</button>
+						</div>
+					</div>
+					<div class="relative">
+						<button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-[#e0e3e7] bg-[#f8fafd] px-3.5 py-2.5 text-sm font-medium text-[#3c4043] transition hover:border-[#c7d2e0] hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800" @click.stop="toggleFilterMenu('updated')">
+							<span>{{ getFilterLabel('updated', selectedUpdatedFilter) }}</span>
+							<IconX v-if="isFilterActive('updated')" :size="16" :stroke="2" class="text-[#5f6368] transition hover:text-[#1a73e8] dark:text-slate-400 dark:hover:text-sky-300" @click.stop="clearFilter('updated')" />
+							<IconChevronDown v-else :size="16" :stroke="2" class="text-[#5f6368] dark:text-slate-400" />
+						</button>
+						<div v-if="activeFilterMenu === 'updated'" class="absolute right-0 top-full z-30 mt-2 min-w-[240px] overflow-hidden rounded-2xl border border-[#e0e3e7] bg-white p-2 shadow-[0_16px_40px_rgba(32,33,36,0.16)] dark:border-slate-700 dark:bg-slate-800">
+							<button v-for="option in updatedOptions" :key="option.value" type="button" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#202124] hover:bg-[#f8fafd] dark:text-slate-100 dark:hover:bg-slate-700/70" @click="applyFilter('updated', option.value)">
+								<span>{{ option.label }}</span>
+								<IconCheck v-if="selectedUpdatedFilter === option.value" :size="16" :stroke="2" class="text-[#1a73e8] dark:text-sky-300" />
+							</button>
+						</div>
+					</div>
+				</div>
+
 				<div class="relative w-full sm:w-[280px]">
 					<IconSearch :size="18" :stroke="2" class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#5f6368] dark:text-slate-400" />
 					<input class="h-11 w-full rounded-full border border-[#dadce0] bg-white pl-11 pr-4 text-sm text-[#202124] outline-none transition focus:border-[#1a73e8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400" type="search" :value="searchTerm" :placeholder="t('drive.searchInFolder')" @input="searchTerm = $event.target.value" />
@@ -746,22 +753,23 @@ onBeforeUnmount(() => {
 
 			<div v-if="!isGridView" class="custom-scrollbar overflow-x-auto rounded-2xl border border-[#e0e3e7] bg-white dark:border-slate-700 dark:bg-slate-800">
 				<div class="min-w-[760px]">
-					<div class="sticky top-0 z-10 grid min-h-11 grid-cols-[minmax(260px,2fr)_minmax(180px,1.1fr)_minmax(150px,1fr)_140px] items-center gap-3 border-b border-[#e8eaed] bg-[#f8fafd]/95 px-[18px] text-[13px] text-[#5f6368] backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400">
-						<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('file_name')"><span>{{ t('drive.sortByName') }}</span>
-							<component :is="sortIndicator('file_name')" v-if="sortIndicator('file_name')" :size="14" :stroke="2" />
-						</button>
-						<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('email')"><span>{{ t('home.fileOwner') }}</span>
-							<component :is="sortIndicator('email')" v-if="sortIndicator('email')" :size="14" :stroke="2" />
-						</button>
-						<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('updated_at')"><span>{{ t('home.fileModified') }}</span>
-							<component :is="sortIndicator('updated_at')" v-if="sortIndicator('updated_at')" :size="14" :stroke="2" />
-						</button>
-						<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('size')"><span>{{ t('drive.size') }}</span>
-							<component :is="sortIndicator('size')" v-if="sortIndicator('size')" :size="14" :stroke="2" />
-						</button>
-					</div>
-					<div class="custom-scrollbar max-h-[min(52vh,520px)] overflow-y-auto overflow-x-hidden">
-						<div v-for="item in sortedFiles" :key="item.id" class="group grid min-h-[52px] cursor-default select-none grid-cols-[minmax(260px,2fr)_minmax(180px,1.1fr)_minmax(150px,1fr)_140px] items-center gap-3 border-t border-[#eceff1] px-[18px] transition first:border-t-0 dark:border-slate-700" :class="isSelected(item) ? 'bg-gradient-to-r from-[#e8f0fe] to-[#f8fbff] shadow-[inset_4px_0_0_#1a73e8] dark:from-sky-500/15 dark:to-slate-800 dark:shadow-[inset_4px_0_0_#38bdf8]' : 'hover:bg-black/[0.02] dark:hover:bg-white/6'" @click="selectItem($event, item)" @dblclick="openItemOnDoubleClick(item)" @contextmenu="openContextMenu($event, item)">
+					<div class="custom-scrollbar max-h-[min(52vh,520px)] overflow-y-auto overflow-x-hidden" @scroll="handleListScroll">
+						<div class="sticky top-0 z-10 grid min-h-11 grid-cols-[minmax(260px,2fr)_minmax(180px,1.1fr)_minmax(150px,1fr)_140px] items-center gap-3 border-b border-[#e8eaed] bg-[#f8fafd]/95 px-[18px] text-[13px] text-[#5f6368] backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400">
+							<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('file_name')"><span>{{ t('drive.sortByName') }}</span>
+								<component :is="sortIndicator('file_name')" v-if="sortIndicator('file_name')" :size="14" :stroke="2" />
+							</button>
+							<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('email')"><span>{{ t('home.fileOwner') }}</span>
+								<component :is="sortIndicator('email')" v-if="sortIndicator('email')" :size="14" :stroke="2" />
+							</button>
+							<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('updated_at')"><span>{{ t('home.fileModified') }}</span>
+								<component :is="sortIndicator('updated_at')" v-if="sortIndicator('updated_at')" :size="14" :stroke="2" />
+							</button>
+							<button type="button" class="flex items-center gap-1 text-left hover:text-[#1a73e8]" @click="toggleSort('size')"><span>{{ t('drive.size') }}</span>
+								<component :is="sortIndicator('size')" v-if="sortIndicator('size')" :size="14" :stroke="2" />
+							</button>
+						</div>
+
+						<div v-for="item in renderedFiles" :key="item.id" class="group grid min-h-[52px] cursor-default select-none grid-cols-[minmax(260px,2fr)_minmax(180px,1.1fr)_minmax(150px,1fr)_140px] items-center gap-3 border-t border-[#eceff1] px-[18px] transition first:border-t-0 dark:border-slate-700" :class="isSelected(item) ? 'bg-gradient-to-r from-[#e8f0fe] to-[#f8fbff] shadow-[inset_4px_0_0_#1a73e8] dark:from-sky-500/15 dark:to-slate-800 dark:shadow-[inset_4px_0_0_#38bdf8]' : 'hover:bg-black/[0.02] dark:hover:bg-white/6'" @click="selectItem($event, item)" @dblclick="openItemOnDoubleClick(item)" @contextmenu="openContextMenu($event, item)">
 							<div class="flex min-w-0 items-center gap-2.5 text-[#202124] dark:text-slate-100">
 								<component :is="getFileIcon(item, isSelected(item))" :size="18" :stroke="isSelected(item) ? 0 : 1.8" class="transition-transform duration-200 group-hover:scale-110" :class="isSelected(item) ? 'text-[#1a73e8] drop-shadow-sm dark:text-sky-300' : 'text-[#5f6368] dark:text-slate-400'" />
 								<TruncateMarquee :text="item.file_name" />
@@ -781,7 +789,7 @@ onBeforeUnmount(() => {
 			</div>
 
 			<div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-				<div v-for="item in sortedFiles" :key="item.id" class="group select-none rounded-[22px] border p-4 transition hover:-translate-y-0.5 hover:border-[#d2e3fc] hover:shadow-[0_10px_30px_rgba(32,33,36,0.08)] dark:hover:border-slate-500" :class="isSelected(item) ? 'border-[#1a73e8] bg-gradient-to-br from-[#e8f0fe] to-[#f8fbff] shadow-[0_14px_34px_rgba(26,115,232,0.14)] dark:border-sky-400 dark:from-sky-500/15 dark:to-slate-800' : 'border-[#e0e3e7] bg-white dark:border-slate-700 dark:bg-slate-800'" @click="selectItem($event, item)" @dblclick="openItemOnDoubleClick(item)" @contextmenu="openContextMenu($event, item)">
+				<div v-for="item in renderedFiles" :key="item.id" class="group select-none rounded-[22px] border p-4 transition hover:-translate-y-0.5 hover:border-[#d2e3fc] hover:shadow-[0_10px_30px_rgba(32,33,36,0.08)] dark:hover:border-slate-500" :class="isSelected(item) ? 'border-[#1a73e8] bg-gradient-to-br from-[#e8f0fe] to-[#f8fbff] shadow-[0_14px_34px_rgba(26,115,232,0.14)] dark:border-sky-400 dark:from-sky-500/15 dark:to-slate-800' : 'border-[#e0e3e7] bg-white dark:border-slate-700 dark:bg-slate-800'" @click="selectItem($event, item)" @dblclick="openItemOnDoubleClick(item)" @contextmenu="openContextMenu($event, item)">
 					<button type="button" class="flex w-full flex-col items-start gap-4 text-left">
 						<div class="flex w-full items-start justify-between gap-3">
 							<div class="grid size-12 place-items-center rounded-2xl transition" :class="isSelected(item) ? 'bg-[#d3e3fd] text-[#1a73e8] shadow-inner dark:bg-sky-500/20 dark:text-sky-300' : 'bg-[#f1f3f4] text-[#5f6368] dark:bg-slate-700 dark:text-slate-300'">
