@@ -58,11 +58,15 @@ export class PCloudAdapter extends BaseCloudAdapter {
 			password: credentials.password,
 		});
 		this.session = { host: login.host, auth: login.auth };
-		updateAccountCredentials(this.account.id, {
-			...credentials,
-			host: login.host,
-			auth: login.auth,
-		});
+		try {
+			updateAccountCredentials(this.account.user_id, this.account.id, {
+				...credentials,
+				host: login.host,
+				auth: login.auth,
+			});
+		} catch (error) {
+			console.warn('pCloud: failed to persist refreshed session:', error?.message || error);
+		}
 		return this.session;
 	}
 
@@ -154,27 +158,38 @@ export class PCloudAdapter extends BaseCloudAdapter {
 
 		const normalized = normalizeVirtualPath(virtualPath);
 		const folderPath = normalized === '/' ? '/' : normalized.replace(/\/+$/, '');
-		const progressStream = this.createProgressStream(onProgress);
 
-		const url = new URL(`https://${host}/uploadfile`);
-		url.searchParams.set('auth', auth);
-		url.searchParams.set('path', folderPath);
-		url.searchParams.set('filename', fileName);
-		url.searchParams.set('nopartial', '1');
+		const chunks = [];
+		let received = 0;
+		for await (const chunk of stream) {
+			const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+			chunks.push(buffer);
+			received += buffer.length;
+			if (typeof onProgress === 'function') {
+				onProgress(received);
+			}
+		}
+		const fileBuffer = Buffer.concat(chunks, received);
+		if (size && received !== size) {
+			console.warn(`pCloud upload size mismatch: expected ${size}, received ${received}`);
+		}
 
-		const response = await fetch(url.toString(), {
+		const form = new FormData();
+		form.set('auth', auth);
+		form.set('path', folderPath);
+		form.set('filename', fileName);
+		form.set('nopartial', '1');
+		form.append('file', new Blob([fileBuffer], { type: mimeType || 'application/octet-stream' }), fileName);
+
+		const response = await fetch(`https://${host}/uploadfile`, {
 			method: 'POST',
-			headers: {
-				'Content-Type': mimeType || 'application/octet-stream',
-				...(size ? { 'Content-Length': String(size) } : {}),
-			},
-			body: stream.pipe(progressStream),
-			duplex: 'half',
+			body: form,
 		});
 
 		const payload = await response.json().catch(() => null);
 		if (!payload || payload.result !== 0) {
-			throw new Error(payload?.error || 'Failed to upload file to pCloud');
+			const message = payload?.error || `pCloud upload failed (HTTP ${response.status})`;
+			throw new Error(message);
 		}
 
 		const meta = (payload.metadata || [])[0] || {};

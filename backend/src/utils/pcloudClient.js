@@ -39,13 +39,17 @@ export async function pcloudLogin({ username, password }) {
 			const usernameHash = sha1Hex(String(username).toLowerCase());
 			const passwordDigest = sha1Hex(password + usernameHash + digest);
 
-			const auth = await pcloudGet(host, 'userinfo', {
+			const auth = await pcloudGet(host, 'login', {
 				getauth: 1,
 				logout: 0,
 				username,
 				digest,
 				passworddigest: passwordDigest,
 			});
+
+			if (!auth.auth) {
+				throw new Error('pCloud login did not return an auth token');
+			}
 
 			return {
 				host,
