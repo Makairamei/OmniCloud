@@ -14,15 +14,9 @@ services:
       - key: APP_MODE
         value: local
       - key: CORS_ORIGIN
-        fromService:
-          type: web
-          name: omnicloud-frontend
-          property: host
+        sync: false # Render akan meminta Anda memasukkan ini saat deploy
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: omnicloud-frontend
-          property: host
+        sync: false # Render akan meminta Anda memasukkan ini saat deploy
 
   # Frontend Web (Static)
   - type: web
@@ -32,7 +26,4 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: omnicloud-backend
-          property: host
+        sync: false # Render akan meminta Anda memasukkan ini saat deploy
