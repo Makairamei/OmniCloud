@@ -1,4 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787/api';
+let rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787/api';
+if (rawApiUrl && !rawApiUrl.startsWith('http')) {
+	rawApiUrl = `https://${rawApiUrl}/api`;
+}
+const API_BASE_URL = rawApiUrl;
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL
 	|| API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '/ws/uploads');
 

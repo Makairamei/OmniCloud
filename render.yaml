@@ -13,6 +13,16 @@ services:
         value: /app/data/omnicloud.db
       - key: APP_MODE
         value: local
+      - key: CORS_ORIGIN
+        fromService:
+          type: web
+          name: omnicloud-frontend
+          property: host
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: omnicloud-frontend
+          property: host
 
   # Frontend Web (Static)
   - type: web
@@ -22,4 +32,7 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://omnicloud-backend.onrender.com/api
+        fromService:
+          type: web
+          name: omnicloud-backend
+          property: host
