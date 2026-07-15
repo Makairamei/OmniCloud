@@ -3,7 +3,7 @@ services:
   - type: web
     name: omnicloud-backend
     runtime: docker
-    dockerContext: backend
+    dockerContext: .
     dockerfilePath: backend/Dockerfile
     plan: free # Menggunakan plan Free agar gratis tanpa billing
     envVars:
