@@ -19,7 +19,7 @@ services:
     name: omnicloud-frontend
     runtime: static
     buildCommand: npm install && npm run build
-    publishDir: frontend/dist
+    staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
         value: https://omnicloud-backend.onrender.com/api
