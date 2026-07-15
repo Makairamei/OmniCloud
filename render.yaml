@@ -6,6 +6,10 @@ services:
     dockerContext: .
     dockerfilePath: backend/Dockerfile
     plan: starter # Menggunakan plan Starter (paid) agar mendukung harddisk persisten
+    disk:
+      name: omnicloud-data
+      mountPath: /app/data
+      sizeGB: 1
     envVars:
       - key: PORT
         value: 8787
@@ -13,10 +17,6 @@ services:
         value: /app/data/omnicloud.db
       - key: APP_MODE
         value: hosted # Diubah ke hosted agar Anda bisa membuat akun permanen sendiri
-    disk:
-      name: omnicloud-data
-      mountPath: /app/data
-      sizeGB: 1
       - key: CORS_ORIGIN
         sync: false # Render akan meminta Anda memasukkan ini saat deploy
       - key: FRONTEND_URL
